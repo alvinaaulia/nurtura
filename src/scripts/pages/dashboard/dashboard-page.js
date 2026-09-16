@@ -6,7 +6,6 @@ import getStatistik from "../../data/statistikApi.js";
 import getStatusAnak from "../../data/statusAnakApi.js";
 import Chart from "chart.js/auto";
 
-
 let chartInstance = null;
 let tahunAktif = "All";
 
@@ -30,16 +29,84 @@ const DashboardPage = {
       <section class="dashboard-page page-shell">
         <div class="dashboard-shell">
           <div class="dashboard-heading">
-            <div><p class="eyebrow">Ringkasan kesehatan anak</p><h1>Dashboard</h1></div>
-            <div class="tahun-select-container"><label for="tahun-select">Periode</label><select id="tahun-select"></select></div>
+            <div class="dashboard-heading-copy">
+              <p class="eyebrow">Child Growth Monitoring System</p>
+              <h1>Pemantauan pertumbuhan</h1>
+              <p class="dashboard-subtitle">Lihat kondisi anak secara ringkas, jelas, dan mudah ditindaklanjuti.</p>
+            </div>
+            <div class="tahun-select-container">
+              <label for="tahun-select">Periode</label>
+              <select id="tahun-select"></select>
+            </div>
           </div>
+
+          <section class="dashboard-hero" aria-label="NURTURA overview">
+            <div class="dashboard-hero-copy">
+              <span class="hero-label">NURTURA</span>
+              <h2>Tumbuh sehat, <em>dipantau dengan sederhana.</em></h2>
+              <p>Pantau status gizi dan perkembangan anak tanpa harus membaca terlalu banyak informasi sekaligus.</p>
+              <div class="hero-actions">
+                <a class="hero-primary" href="#/tambah-anak">Tambah Data Anak</a>
+                <a class="hero-secondary" href="#/anak">Lihat Data Anak</a>
+              </div>
+            </div>
+            <div class="dashboard-hero-note">
+              <span class="note-dot"></span>
+              <small>Ringkas dan terarah</small>
+              <strong>3 kategori status gizi</strong>
+              <p>Klik kartu status untuk melihat daftar anak pada kategori tersebut.</p>
+            </div>
+          </section>
+
+          <div class="dashboard-section-heading">
+            <div>
+              <span>Ringkasan</span>
+              <h2>Status gizi anak</h2>
+            </div>
+            <p>Data mengikuti periode yang dipilih.</p>
+          </div>
+
           <div class="summary-boxes">
-            ${labelOrder.map((label) => `<button type="button" class="summary-box" data-status="${label}"><span class="summary-copy"><small>${getLabelDisplay(label)}</small><strong id="${getSpanId(label)}">...</strong></span><span class="summary-arrow">→</span></button>`).join("")}
+            ${labelOrder
+              .map(
+                (label) => `
+                  <button type="button" class="summary-box" data-status="${label}">
+                    <span class="summary-copy">
+                      <small>${getLabelDisplay(label)}</small>
+                      <strong id="${getSpanId(label)}">...</strong>
+                      <span class="summary-caption">anak</span>
+                    </span>
+                    <span class="summary-arrow" aria-hidden="true">↗</span>
+                  </button>
+                `
+              )
+              .join("")}
           </div>
-          <div class="chart-container"><div class="chart-title"><h2>Distribusi Status Gizi</h2><p>Visualisasi data pemeriksaan berdasarkan periode yang dipilih.</p></div><div class="chart-canvas-wrap"><canvas id="stuntingChart"></canvas></div></div>
+
+          <div class="chart-container">
+            <div class="chart-title">
+              <div>
+                <span class="chart-eyebrow">Distribusi</span>
+                <h2>Status gizi berdasarkan periode</h2>
+              </div>
+              <p>Perbandingan jumlah anak pada setiap kategori pemantauan.</p>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="stuntingChart"></canvas>
+            </div>
+          </div>
         </div>
       </section>
-      <div id="anak-modal" class="anak-modal hidden"><div class="modal"><div class="modal-header"><h2 id="modal-title">Daftar Anak</h2><button class="modal-close" onclick="closeDashboardModal()" aria-label="Tutup">×</button></div><div class="modal-body" id="modal-list"></div></div></div>
+
+      <div id="anak-modal" class="anak-modal hidden">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 id="modal-title">Daftar Anak</h2>
+            <button class="modal-close" onclick="closeDashboardModal()" aria-label="Tutup">×</button>
+          </div>
+          <div class="modal-body" id="modal-list"></div>
+        </div>
+      </div>
     `;
   },
 
@@ -92,9 +159,7 @@ const DashboardPage = {
     });
 
     document.getElementById("anak-modal").addEventListener("click", (e) => {
-      if (e.target.id === "anak-modal") {
-        closeDashboardModal();
-      }
+      if (e.target.id === "anak-modal") closeDashboardModal();
     });
 
     window.onkeydown = (e) => {
@@ -106,14 +171,15 @@ const DashboardPage = {
 };
 
 function updateDashboard(tahun, statistik, anakData) {
-  const dataTahun = tahun === "All"
-    ? Object.values(statistik).reduce((total, current) => {
-        labelOrder.forEach((label) => {
-          total[label] = (total[label] || 0) + (Number(current?.[label]) || 0);
-        });
-        return total;
-      }, {})
-    : (statistik[tahun] || {});
+  const dataTahun =
+    tahun === "All"
+      ? Object.values(statistik).reduce((total, current) => {
+          labelOrder.forEach((label) => {
+            total[label] = (total[label] || 0) + (Number(current?.[label]) || 0);
+          });
+          return total;
+        }, {})
+      : statistik[tahun] || {};
 
   labelOrder.forEach((label) => {
     const span = document.getElementById(getSpanId(label));
@@ -130,23 +196,44 @@ function updateDashboard(tahun, statistik, anakData) {
     type: "bar",
     data: {
       labels: labelOrder.map(getLabelDisplay),
-      datasets: [{
-        label: `Statistik Anak (${periodLabel})`,
-        data: labelOrder.map((label) => dataTahun[label] || 0),
-        borderWidth: 0,
-        borderRadius: 10,
-        borderSkipped: false,
-        backgroundColor: ["#2f9b83", "#e6a23c", "#dc6262"],
-        maxBarThickness: 72,
-      }],
+      datasets: [
+        {
+          label: `Statistik Anak (${periodLabel})`,
+          data: labelOrder.map((label) => dataTahun[label] || 0),
+          borderWidth: 0,
+          borderRadius: 18,
+          borderSkipped: false,
+          backgroundColor: ["#8fcbb0", "#e7c876", "#d99aa1"],
+          maxBarThickness: 76,
+        },
+      ],
     },
     options: {
-      layout: { padding: 0 }, responsive: true, maintainAspectRatio: false,
-      plugins: { title: { display: false }, legend: { display: false },
-        tooltip: { callbacks: { label: (context) => `${context.raw} anak` } } },
+      layout: { padding: 0 },
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: { display: false },
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#242620",
+          padding: 12,
+          displayColors: false,
+          callbacks: { label: (context) => `${context.raw} anak` },
+        },
+      },
       scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1, color: "#789095", precision: 0 }, grid: { color: "#edf2f1" }, border: { display: false } },
-        x: { ticks: { color: "#52686d", font: { weight: 600 } }, grid: { display: false }, border: { display: false } },
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: "#8a877f", precision: 0 },
+          grid: { color: "#eee8df" },
+          border: { display: false },
+        },
+        x: {
+          ticks: { color: "#5e5f59", font: { weight: 600 } },
+          grid: { display: false },
+          border: { display: false },
+        },
       },
     },
   });
@@ -193,6 +280,7 @@ function tampilkanModal(data, status, tahunAktif) {
 
 function closeDashboardModal() {
   const modal = document.getElementById("anak-modal");
+  if (!modal) return;
   modal.classList.remove("open");
   modal.classList.add("hidden");
 }
