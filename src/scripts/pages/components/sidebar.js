@@ -23,8 +23,8 @@ const Sidebar = {
         <a class="sidebar-brand" href="#/dashboard" aria-label="NURTURA Dashboard">
           <img src="/images/nurtura-logo.svg" alt="NURTURA - Child Growth Monitoring System" />
         </a>
-        <div class="sidebar-workspace"><span>Workspace</span><strong>Posyandu</strong></div>
-        <div class="nav-section-label">Utama</div>
+        <div class="sidebar-separator"></div>
+        <div class="nav-section-label">Menu</div>
         <ul class="nav-links">
           ${item("#/dashboard", "Dashboard", "dashboard")}
           ${item("#/anak", "Data Anak", "children")}
@@ -36,7 +36,10 @@ const Sidebar = {
           <li class="nav-spacer"></li>
           <li><a href="#" id="logoutBtn" class="logout-link">${icon("logout")}<span>Keluar</span></a></li>
         </ul>
-        <div class="sidebar-footer"><span class="status-dot"></span><span>Sistem aktif</span><small>v1.0</small></div>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <span><strong>Posyandu Workspace</strong><small>Sistem aktif</small></span>
+        </div>
       </nav>`;
   },
   afterRender() {
@@ -61,13 +64,15 @@ const Sidebar = {
       window.location.hash = "/login";
       location.reload();
     });
-    sidebar?.querySelectorAll("a:not(#logoutBtn)").forEach((link) => link.addEventListener("click", close));
+    sidebar?.querySelectorAll("a:not(#logoutBtn)").forEach((anchor) => anchor.addEventListener("click", close));
     toggle?.addEventListener("click", (event) => {
       event.stopPropagation();
       sidebar?.classList.contains("open") ? close() : open();
     });
     overlay?.addEventListener("click", close);
-    document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && sidebar?.classList.contains("open")) close();
+    });
   },
 };
 
