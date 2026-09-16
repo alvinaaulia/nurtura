@@ -9,9 +9,9 @@ const RegisterPage = {
     return `
       <section class="form-page">
         <div class="auth-left">
-          <img src="/kesehatan.png" alt="SMART Logo" />
-          <h2>SMART</h2>
-          <p>Stunting Monitoring and Alert Response Tool</p>
+          <img src="/kesehatan.png" alt="NURTURA Logo" />
+          <h2>NURTURA</h2>
+          <p>Child Growth Monitoring System</p>
         </div>
 
         <div class="auth-right">
