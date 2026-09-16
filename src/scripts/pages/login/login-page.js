@@ -1,116 +1,63 @@
-import Header from "../components/header.js";
 import LoginPresenter from "./login-presenter.js";
 import "../../../styles/auth.css";
+
+const eyeIcon = `<svg class="eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg>`;
 
 const LoginPage = {
   render() {
     return `
-    <section class="form-page">
-      <div class="auth-left">
-        <img src="/kesehatan.png" alt="NURTURA Logo" />
-        <h2>NURTURA</h2>
-        <p>Child Growth Monitoring System</p>
-      </div>
-
-      <div class="auth-right">
-        <form id="loginForm" class="form-card">
-          <label for="username">Username</label>
-          <input id="username" type="text" placeholder="Contoh: johndoe" required />
-
-          <label for="password">Password</label>
-          <div class="password-wrapper">
-            <input id="password" type="password" placeholder="Password" required />
-            <span class="toggle-password" onclick="showHide(this)">
-              <svg xmlns="http://www.w3.org/2000/svg" class="eye-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <!-- Path for the center circle of the eye -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <!-- Path for the main eye shape -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                <!-- New path for the slash/line-through effect -->
-                <path class="slash-path" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M6 18L18 6" style="display: none;" />
-              </svg>
-            </span>
+      <section class="auth-page auth-login-page">
+        <aside class="auth-brand-panel">
+          <a class="auth-brand" href="#/login"><img src="/images/nurtura-logo.svg" alt="NURTURA - Child Growth Monitoring System" /></a>
+          <div class="auth-brand-message">
+            <span class="auth-kicker">Tumbuh bersama, dipantau dengan baik</span>
+            <h1>Pemantauan anak yang <em>lebih sederhana.</em></h1>
+            <p>NURTURA membantu kader Posyandu menyimpan, membaca, dan menindaklanjuti data pertumbuhan anak dalam satu ruang kerja yang rapi.</p>
           </div>
+          <div class="auth-brand-points" aria-hidden="true"><span>Data terstruktur</span><span>Status lebih jelas</span><span>Ringkasan cepat</span></div>
+          <div class="auth-orbit auth-orbit-one"></div><div class="auth-orbit auth-orbit-two"></div>
+        </aside>
 
-          <button type="submit">Login</button>
-          <div id="loginLoading" class="spinner" style="display: none; margin-top: 10px;"></div>
-          <p>Belum punya akun? <a href="#/register">Register</a></p>
-          <p id="loginError" style="color: red; margin-top: 10px;"></p>
-        </form>
-      </div>
-    </section>
-    `;
+        <main class="auth-form-panel">
+          <div class="auth-form-wrap">
+            <div class="auth-form-heading"><span class="auth-kicker">Selamat datang kembali</span><h2>Masuk ke NURTURA</h2><p>Gunakan akun kader Posyandu untuk melanjutkan.</p></div>
+            <form id="loginForm" class="auth-form-card" novalidate>
+              <label class="auth-field" for="username"><span>Username</span><input id="username" name="username" type="text" autocomplete="username" placeholder="Masukkan username" required /></label>
+              <label class="auth-field" for="password"><span>Password</span><div class="password-wrapper"><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan password" required /><button class="toggle-password" type="button" aria-label="Tampilkan password">${eyeIcon}</button></div></label>
+              <p id="loginError" class="auth-message" role="alert" aria-live="polite"></p>
+              <button type="submit" class="auth-submit"><span>Masuk</span><b aria-hidden="true">→</b></button>
+              <div id="loginLoading" class="spinner" hidden></div>
+              <p class="auth-switch">Belum punya akun? <a href="#/register">Buat akun</a></p>
+            </form>
+          </div>
+        </main>
+      </section>`;
   },
 
   async afterRender() {
-    Header.afterRender();
     this.presenter = new LoginPresenter({ view: this });
-
     const form = document.getElementById("loginForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = form.username.value.trim();
-      const password = form.password.value.trim();
-
-      this.showError(""); // Clear previous errors
-
-      if (!username || !password) {
-        this.showError("Username dan password tidak boleh kosong.");
-        return;
-      }
-
-      await this.presenter.handleLogin(username, password);
+    const password = document.getElementById("password");
+    document.querySelector(".toggle-password")?.addEventListener("click", (event) => {
+      const show = password.type === "password";
+      password.type = show ? "text" : "password";
+      event.currentTarget.setAttribute("aria-label", show ? "Sembunyikan password" : "Tampilkan password");
     });
-
-    // Function to toggle password visibility and eye icon slash
-    window.showHide = function (icon) {
-      const input = icon.parentElement.querySelector("input");
-      const eyeIconSvg = icon.querySelector(".eye-icon");
-      const slashPath = eyeIconSvg.querySelector(".slash-path"); // Get the slash path
-
-      if (input.type === "password") {
-        input.type = "text";
-        slashPath.style.display = "none"; // Hide the slash when password is visible
-      } else {
-        input.type = "password";
-        slashPath.style.display = "block"; // Show the slash when password is hidden
-      }
-    };
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = form.username.value.trim();
+      const passwordValue = form.password.value.trim();
+      this.showError("");
+      if (!username || !passwordValue) { this.showError("Username dan password wajib diisi."); return; }
+      await this.presenter.handleLogin(username, passwordValue);
+    });
   },
 
-  showError(message) {
-    const errorElem = document.getElementById("loginError");
-    if (errorElem) errorElem.textContent = message;
-  },
-
-  showLoading() {
-    const loading = document.getElementById("loginLoading");
-    if (loading) loading.style.display = "block";
-    this.disableForm();
-  },
-
-  hideLoading() {
-    const loading = document.getElementById("loginLoading");
-    if (loading) loading.style.display = "none";
-    this.enableForm();
-  },
-
-  disableForm() {
-    const form = document.getElementById("loginForm");
-    form
-      .querySelectorAll("input, button")
-      .forEach((el) => (el.disabled = true));
-  },
-
-  enableForm() {
-    const form = document.getElementById("loginForm");
-    form
-      .querySelectorAll("input, button")
-      .forEach((el) => (el.disabled = false));
-  },
+  showError(message) { const el = document.getElementById("loginError"); if (el) el.textContent = message; },
+  showLoading() { const el = document.getElementById("loginLoading"); if (el) el.hidden = false; this.disableForm(); },
+  hideLoading() { const el = document.getElementById("loginLoading"); if (el) el.hidden = true; this.enableForm(); },
+  disableForm() { document.getElementById("loginForm")?.querySelectorAll("input, button").forEach((el) => el.disabled = true); },
+  enableForm() { document.getElementById("loginForm")?.querySelectorAll("input, button").forEach((el) => el.disabled = false); },
 };
 
 export default LoginPage;
