@@ -1,6 +1,7 @@
 import "../styles/styles.css";
 import "../styles/modern-ui.css";
 import "../styles/sidebar.css";
+import "../styles/nurtura-theme.css";
 
 import App from "./pages/app.js";
 
