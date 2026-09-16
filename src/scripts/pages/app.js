@@ -6,37 +6,24 @@ import { protectRoute } from "../utils/auth-guard.js";
 
 class App {
   #content = null;
-
-  constructor({ content }) {
-    this.#content = content;
-
-  }
+  constructor({ content }) { this.#content = content; }
 
   async renderPage() {
-    const path = getActivePathname(); // "/dashboard", "/welcome", dsb
-
-    // ✅ Middleware proteksi route
+    const path = getActivePathname();
     const redirectPath = protectRoute(path);
-    if (redirectPath) {
-      window.location.hash = redirectPath;
-      return;
-    }
-
+    if (redirectPath) { window.location.hash = redirectPath; return; }
     const page = routes[path] || routes["/"];
     if (!page || typeof page.render !== "function") {
-      this.#content.innerHTML = "<h2>404 - Halaman tidak ditemukan</h2>";
+      this.#content.innerHTML = `<section class="app-state-page"><strong>404</strong><h1>Halaman tidak ditemukan</h1><a href="#/dashboard">Kembali ke dashboard</a></section>`;
       return;
     }
-
     try {
       this.#content.innerHTML = await page.render();
       await page.afterRender();
     } catch (error) {
-      this.#content.innerHTML =
-        "<h2>Terjadi kesalahan saat memuat halaman</h2>";
+      this.#content.innerHTML = `<section class="app-state-page"><strong>Terjadi kesalahan</strong><h1>Halaman gagal dimuat</h1><p>Silakan muat ulang halaman atau kembali ke dashboard.</p><a href="#/dashboard">Kembali ke dashboard</a></section>`;
       console.error("Render error:", error);
     }
-
     this._updateNavigationUI();
   }
 
@@ -45,39 +32,26 @@ class App {
     const publicRoutes = ["/login", "/register", "/welcome", "/buat-profile"];
     const isPublic = publicRoutes.includes(currentRoute);
     const step3Completed = localStorage.getItem("step3_completed") === "true";
+    const useAppShell = !isPublic && step3Completed;
+    document.body.classList.toggle("public-view", !useAppShell);
+    document.body.classList.toggle("app-view", useAppShell);
 
     const mainHeader = document.getElementById("main-header");
     const sidebarContainer = document.getElementById("sidebar-container");
-
-    // ===== HEADER =====
     if (mainHeader) {
-      if (isPublic || !step3Completed) {
-        mainHeader.innerHTML = "";
-        mainHeader.style.display = "none";
-      } else {
-        mainHeader.innerHTML = Header.render();
-        Header.afterRender();
-        mainHeader.style.display = "flex";
-      }
+      if (!useAppShell) { mainHeader.innerHTML = ""; mainHeader.style.display = "none"; }
+      else { mainHeader.innerHTML = Header.render(); Header.afterRender(); mainHeader.style.display = "flex"; }
     }
-
-    // ===== SIDEBAR =====
     if (sidebarContainer) {
-      if (isPublic || !step3Completed) {
-        sidebarContainer.innerHTML = "";
-      } else {
-        sidebarContainer.innerHTML = Sidebar.render();
-        Sidebar.afterRender();
-      }
+      if (!useAppShell) sidebarContainer.innerHTML = "";
+      else { sidebarContainer.innerHTML = Sidebar.render(); Sidebar.afterRender(); }
     }
   }
 
   handleLogout() {
-    ["token", "step1_completed", "step2_completed", "step3_completed"].forEach(
-      (k) => localStorage.removeItem(k)
-    );
+    ["token", "step1_completed", "step2_completed", "step3_completed"].forEach((key) => localStorage.removeItem(key));
     window.location.hash = "/login";
-    location.reload(); // 💥 Force reset UI dan state
+    location.reload();
   }
 }
 
