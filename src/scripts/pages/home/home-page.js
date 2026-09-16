@@ -1,14 +1,7 @@
 export default class HomePage {
-  async render() {
-    return `
-      <section class="container">
-        <h1>Home Page</h1>
-      </section>
-    `;
-  }
-
+  async render() { return `<section class="app-state-page"><strong>NURTURA</strong><h1>Menyiapkan ruang kerja...</h1></section>`; }
   async afterRender() {
-    // Do your job here
+    const ready = localStorage.getItem("token") && localStorage.getItem("step3_completed") === "true";
+    window.location.hash = ready ? "/dashboard" : "/login";
   }
-  
 }
