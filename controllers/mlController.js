@@ -5,23 +5,20 @@ let model = null;
 const PORT = process.env.PORT || 5000;
 const MODEL_URL = process.env.ML_MODEL_URL || `http://127.0.0.1:${PORT}/public/ml-model/model/model.json`;
 
-// Map gender dan label
 const GENDER_MAP = {
   'laki-laki': 0,
-  'perempuan': 1
+  perempuan: 1,
 };
 
 const LABEL_MAP = {
   0: 'Berpotensi Stunting',
   1: 'Normal',
-  2: 'Stunting'
+  2: 'Stunting',
 };
 
-// Mean dan std (urutan: gender, umur, tinggi, berat)
 const mean = [0.5, 16, 75, 8];
 const std = [0.5, 4, 5, 1];
-
-const standardize = (val, mean, std) => (val - mean) / std;
+const standardize = (val, avg, deviation) => (val - avg) / deviation;
 
 const loadModel = async () => {
   if (!model) {
@@ -30,95 +27,132 @@ const loadModel = async () => {
   }
 };
 
+const calculateAgeMonths = (birthDateValue, examinationDateValue) => {
+  if (!birthDateValue) return null;
+  const birth = new Date(`${String(birthDateValue).slice(0, 10)}T00:00:00`);
+  const exam = new Date(`${String(examinationDateValue).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(birth.getTime()) || Number.isNaN(exam.getTime()) || exam < birth) return null;
+
+  let months = (exam.getFullYear() - birth.getFullYear()) * 12 + exam.getMonth() - birth.getMonth();
+  if (exam.getDate() < birth.getDate()) months -= 1;
+  return Math.max(0, months);
+};
+
 const predictData = async (req, res) => {
+  const input = Array.isArray(req.body) ? req.body[0] : req.body;
+  const {
+    anak_id,
+    tanggal_pemeriksaan,
+    tinggi_badan,
+    berat_badan,
+    lingkar_kepala,
+    catatan,
+    umur_bulan: legacyAge,
+  } = input || {};
+
+  if (!anak_id || !tanggal_pemeriksaan || tinggi_badan == null || berat_badan == null) {
+    return res.status(400).json({
+      message: 'Anak, tanggal pemeriksaan, tinggi badan, dan berat badan wajib diisi.',
+    });
+  }
+
+  let inputTensor;
+  let prediction;
+  let client;
+
   try {
-    await loadModel();
-
-    const inputList = req.body;
-
-    if (!Array.isArray(inputList) || inputList.length === 0) {
-      return res.status(400).json({ error: 'Input harus berupa array JSON dan tidak boleh kosong' });
+    const childResult = await pool.query('SELECT * FROM status_anak WHERE id = $1', [anak_id]);
+    if (!childResult.rows.length) {
+      return res.status(404).json({ message: 'Data anak tidak ditemukan.' });
     }
 
-    const results = [];
-
-    for (const item of inputList) {
-      const {
-        nama,
-        jenis_kelamin,
-        umur_bulan,
-        tinggi_badan,
-        berat_badan,
-        alamat,
-        posyandu,
-        foto_url
-      } = item;
-
-      if (!nama || !jenis_kelamin || umur_bulan == null || tinggi_badan == null || berat_badan == null) {
-        return res.status(400).json({
-          error: 'Field tidak lengkap. Harap isi nama, jenis_kelamin, umur_bulan, tinggi_badan, dan berat_badan.'
-        });
-      }
-
-      const genderLower = jenis_kelamin.toLowerCase();
-      const genderNumeric = GENDER_MAP[genderLower] ?? 0;
-
-      let inputArray = [genderNumeric, umur_bulan, tinggi_badan, berat_badan];
-      inputArray = inputArray.map((val, i) => standardize(val, mean[i], std[i]));
-
-      const inputTensor = tf.tensor2d([inputArray], [1, 4]);
-      const prediction = model.predict(inputTensor);
-      const probabilities = await prediction.data(); // ✅ pakai async
-      const predictedClass = probabilities.indexOf(Math.max(...probabilities));
-      const predictedLabel = LABEL_MAP[predictedClass];
-
-      // Debugging opsional
-      console.log('=====================');
-      console.log('👶 Nama:', nama);
-      console.log('🧠 Input Standardized:', inputArray);
-      console.log('📊 Probabilities:', probabilities);
-      console.log('✅ Predicted:', predictedLabel);
-      console.log('=====================');
-
-      await pool.query(`
-        INSERT INTO status_anak 
-        (nama, jenis_kelamin, umur_bulan, tinggi_badan, berat_badan, predicted_class, label, alamat, posyandu, foto_url)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      `, [
-        nama,
-        jenis_kelamin,
-        umur_bulan,
-        tinggi_badan,
-        berat_badan,
-        predictedClass,
-        predictedLabel,
-        alamat ?? null,
-        posyandu ?? null,
-        foto_url ?? null
-      ]);
-
-      results.push({
-        nama,
-        jenis_kelamin,
-        umur_bulan,
-        tinggi_badan,
-        berat_badan,
-        predicted_class: predictedClass,
-        label: predictedLabel,
-        alamat: alamat ?? null,
-        posyandu: posyandu ?? null,
-        foto_url: foto_url ?? null
+    const child = childResult.rows[0];
+    const ageMonths = calculateAgeMonths(child.tanggal_lahir, tanggal_pemeriksaan) ?? Number(legacyAge);
+    if (!Number.isFinite(ageMonths) || ageMonths < 0) {
+      return res.status(400).json({
+        message: 'Umur anak tidak dapat dihitung. Lengkapi tanggal lahir anak terlebih dahulu.',
       });
     }
 
-    res.status(201).json({
-      message: '✅ Semua data berhasil diprediksi & disimpan',
-      data: results
-    });
+    const height = Number(tinggi_badan);
+    const weight = Number(berat_badan);
+    if (!Number.isFinite(height) || !Number.isFinite(weight) || height <= 0 || weight <= 0) {
+      return res.status(400).json({ message: 'Tinggi dan berat badan harus berupa angka yang valid.' });
+    }
 
+    await loadModel();
+
+    const genderNumeric = GENDER_MAP[String(child.jenis_kelamin || '').toLowerCase()] ?? 0;
+    const standardized = [genderNumeric, ageMonths, height, weight]
+      .map((value, index) => standardize(value, mean[index], std[index]));
+
+    inputTensor = tf.tensor2d([standardized], [1, 4]);
+    prediction = model.predict(inputTensor);
+    const probabilities = await prediction.data();
+    const predictedClass = probabilities.indexOf(Math.max(...probabilities));
+    const predictedLabel = LABEL_MAP[predictedClass];
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    const historyResult = await client.query(`
+      INSERT INTO riwayat_pemeriksaan (
+        anak_id,
+        tanggal_pemeriksaan,
+        tinggi_badan,
+        berat_badan,
+        umur_bulan,
+        status,
+        predicted_class,
+        lingkar_kepala,
+        catatan
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      RETURNING *
+    `, [
+      anak_id,
+      tanggal_pemeriksaan,
+      height,
+      weight,
+      ageMonths,
+      predictedLabel,
+      predictedClass,
+      lingkar_kepala === '' || lingkar_kepala == null ? null : Number(lingkar_kepala),
+      catatan ? String(catatan).trim() : null,
+    ]);
+
+    await client.query(`
+      UPDATE status_anak
+      SET umur_bulan = $1,
+          tinggi_badan = $2,
+          berat_badan = $3,
+          predicted_class = $4,
+          label = $5,
+          last_checkup_at = $6,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7
+    `, [ageMonths, height, weight, predictedClass, predictedLabel, tanggal_pemeriksaan, anak_id]);
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: 'Pemeriksaan berhasil disimpan tanpa menghapus riwayat sebelumnya.',
+      data: {
+        ...historyResult.rows[0],
+        nama: child.nama,
+        jenis_kelamin: child.jenis_kelamin,
+      },
+    });
   } catch (error) {
-    console.error('❌ Gagal batch predict:', error);
-    res.status(500).json({ error: 'Gagal memproses data batch' });
+    if (client) {
+      try { await client.query('ROLLBACK'); } catch (_) {}
+    }
+    console.error('❌ Gagal menyimpan pemeriksaan:', error);
+    res.status(500).json({ message: 'Gagal memproses dan menyimpan pemeriksaan anak.' });
+  } finally {
+    if (inputTensor) inputTensor.dispose();
+    if (prediction && typeof prediction.dispose === 'function') prediction.dispose();
+    if (client) client.release();
   }
 };
 
