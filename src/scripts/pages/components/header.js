@@ -19,22 +19,27 @@ const Header = {
     const [title, subtitle] = pageMeta();
     return `
       <div class="app-header-inner">
-        <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Buka navigasi" aria-controls="sidebar" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
-        <button class="header-brand" type="button" aria-label="Ke dashboard">
-          <img src="/images/nurtura-mark.svg" alt="" class="header-brand-mark" />
-          <span class="header-brand-copy"><strong>NURTURA</strong><small>Child Growth Monitoring System</small></span>
-        </button>
-        <div class="header-page-context" aria-live="polite">
-          <span class="header-page-kicker">Workspace</span>
-          <strong>${title}</strong>
-          <small>${subtitle}</small>
+        <div class="header-left">
+          <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Buka navigasi" aria-controls="sidebar" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <button class="header-mobile-brand" type="button" aria-label="Ke dashboard">
+            <img src="/images/nurtura-mark.svg" alt="" />
+            <span>NURTURA</span>
+          </button>
+          <div class="header-page-context" aria-live="polite">
+            <strong>${title}</strong>
+            <small>${subtitle}</small>
+          </div>
+        </div>
+        <div class="header-right">
+          <span class="header-status"><i></i> Sistem aktif</span>
+          <span class="header-product">Child Growth Monitoring System</span>
         </div>
       </div>`;
   },
   afterRender() {
-    document.querySelector(".header-brand")?.addEventListener("click", () => {
+    document.querySelector(".header-mobile-brand")?.addEventListener("click", () => {
       window.location.hash = "/dashboard";
     });
   },
