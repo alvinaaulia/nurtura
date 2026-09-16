@@ -11,12 +11,12 @@ const pageMeta = () => {
     "/report": ["Laporan", "Rekap pemantauan"],
     "/riwayat": ["Riwayat", "Pemeriksaan anak"],
   };
-  return pages[path] || ["SMART", "Stunting Monitoring"];
+  return pages[path] || ["NURTURA", "Child Growth Monitoring System"];
 };
 
 const Header = {
   render(isAuthPage = false) {
-    if (isAuthPage) return `<header class="main-header auth-header"><img src="kesehatan.png" alt="SMART" class="auth-logo" /></header>`;
+    if (isAuthPage) return `<header class="main-header auth-header"><img src="kesehatan.png" alt="NURTURA" class="auth-logo" /></header>`;
     const [title, subtitle] = pageMeta();
     return `
       <header class="main-header">
@@ -24,8 +24,8 @@ const Header = {
           <span></span><span></span><span></span>
         </button>
         <button class="header-logo" type="button" aria-label="Ke dashboard">
-          <img src="kesehatan.png" alt="Logo SMART" />
-          <div class="header-logo-text"><strong>SMART</strong><small>Stunting Monitoring</small></div>
+          <img src="kesehatan.png" alt="Logo NURTURA" />
+          <div class="header-logo-text"><strong>NURTURA</strong><small>Child Growth Monitoring System</small></div>
         </button>
         <div class="header-page-context" aria-live="polite"><strong>${title}</strong><small>${subtitle}</small></div>
       </header>`;
