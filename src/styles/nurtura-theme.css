@@ -1,0 +1,301 @@
+/* NURTURA calm visual system
+   Inspired by the supplied playful references, reduced to a quieter product UI. */
+:root {
+  --n-cream: #fbf7ef;
+  --n-surface: #fffdf9;
+  --n-ink: #20221f;
+  --n-muted: #73756f;
+  --n-line: #e9e2d7;
+  --n-mint: #dff3e7;
+  --n-mint-strong: #437c66;
+  --n-lilac: #e9e1f7;
+  --n-lilac-strong: #6f5d92;
+  --n-blush: #f7e1e7;
+  --n-butter: #f6e7b8;
+  --n-danger: #a85e66;
+  --n-radius: 22px;
+  --n-shadow: 0 10px 30px rgba(74, 65, 50, 0.055);
+
+  --brand: var(--n-mint-strong);
+  --brand-strong: #315e4c;
+  --brand-soft: var(--n-mint);
+  --ink: var(--n-ink);
+  --muted: var(--n-muted);
+  --line: var(--n-line);
+  --surface: var(--n-surface);
+  --canvas: var(--n-cream);
+  --shadow: var(--n-shadow);
+  --radius: var(--n-radius);
+}
+
+html,
+body {
+  background: var(--n-cream) !important;
+  color: var(--n-ink) !important;
+}
+
+body {
+  font-family: Inter, "Segoe UI", Arial, sans-serif !important;
+}
+
+#main-content,
+.main-content,
+.main-content-anak,
+.legacy-dashboard-layout {
+  background: var(--n-cream) !important;
+}
+
+/* Header: small, quiet, editorial */
+.main-header {
+  background: rgba(255, 253, 249, 0.96) !important;
+  border-bottom: 1px solid var(--n-line) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(16px);
+}
+
+.header-logo img {
+  filter: saturate(0.85);
+}
+
+.header-logo-text strong {
+  color: var(--n-ink) !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 800 !important;
+}
+
+.header-logo-text small,
+.header-page-context small {
+  color: var(--n-muted) !important;
+}
+
+.header-page-context strong {
+  color: var(--n-ink) !important;
+}
+
+/* Sidebar: cream canvas, one lavender active state */
+.sidebar {
+  background: #fffaf2 !important;
+  border-right: 1px solid var(--n-line) !important;
+  box-shadow: none !important;
+}
+
+.sidebar .top-section {
+  border-bottom: 1px solid var(--n-line) !important;
+}
+
+.sidebar .top-section span,
+.sidebar .credit {
+  color: #98948c !important;
+}
+
+.sidebar .top-section strong {
+  color: var(--n-ink) !important;
+}
+
+.sidebar .nav-links a {
+  color: #555750 !important;
+  border-radius: 14px !important;
+}
+
+.sidebar .nav-links a:hover {
+  background: #f0eadf !important;
+  color: var(--n-ink) !important;
+}
+
+.sidebar .nav-links a.active {
+  background: var(--n-lilac) !important;
+  color: #3e3550 !important;
+  box-shadow: none !important;
+}
+
+.sidebar .nav-links li:last-child a {
+  color: #8d6565 !important;
+}
+
+.status-dot {
+  background: #73b28f !important;
+  box-shadow: 0 0 0 4px #e6f4ea !important;
+}
+
+/* Shared surfaces */
+.surface-card,
+.chart-container,
+.profile-posyandu,
+.table-container,
+.anak-card,
+.form-container,
+.detail-card,
+.form-card {
+  background: var(--n-surface) !important;
+  border: 1px solid var(--n-line) !important;
+  box-shadow: none !important;
+  border-radius: var(--n-radius) !important;
+}
+
+.anak-card:hover,
+.surface-card:hover {
+  border-color: #d8cec0 !important;
+  box-shadow: var(--n-shadow) !important;
+}
+
+/* Controls */
+.search-wrapper,
+.search-container {
+  background: var(--n-surface) !important;
+  border: 1px solid var(--n-line) !important;
+  box-shadow: none !important;
+  border-radius: 18px !important;
+}
+
+.search-input,
+.search-container input,
+form input,
+form textarea,
+form select,
+#tahun-select {
+  background: #fff !important;
+  border: 1px solid #ded7cb !important;
+  border-radius: 13px !important;
+  color: var(--n-ink) !important;
+}
+
+.search-input:focus,
+.search-container input:focus,
+form input:focus,
+form textarea:focus,
+form select:focus,
+#tahun-select:focus {
+  border-color: #9bbfac !important;
+  box-shadow: 0 0 0 3px rgba(67, 124, 102, 0.1) !important;
+}
+
+.btn-tambah,
+.btn-primary,
+button[type="submit"],
+.btn-tambah-data {
+  background: var(--n-ink) !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.btn-tambah:hover,
+.btn-primary:hover,
+button[type="submit"]:hover,
+.btn-tambah-data:hover {
+  background: #343731 !important;
+  transform: translateY(-1px);
+}
+
+/* Typography: use serif only as an accent, not everywhere */
+.page-heading-copy h1,
+.page-title,
+.dashboard-heading h1,
+.form-container h2,
+.detail-anak > h2 {
+  color: var(--n-ink) !important;
+  letter-spacing: -0.045em !important;
+}
+
+.page-title:after {
+  background: var(--n-mint-strong) !important;
+}
+
+/* Auth screens: playful through proportion, not decoration overload */
+.form-page {
+  background: var(--n-cream) !important;
+}
+
+.auth-left {
+  background: var(--n-lilac) !important;
+  color: var(--n-ink) !important;
+}
+
+.auth-left:before {
+  width: 320px !important;
+  height: 320px !important;
+  right: -150px !important;
+  top: -130px !important;
+  background: rgba(255, 255, 255, 0.35) !important;
+}
+
+.auth-left:after {
+  width: 180px !important;
+  height: 180px !important;
+  left: -90px !important;
+  bottom: -80px !important;
+  background: rgba(223, 243, 231, 0.65) !important;
+}
+
+.auth-left h2 {
+  color: var(--n-ink) !important;
+  letter-spacing: 0.04em !important;
+}
+
+.auth-left p {
+  color: #615a6b !important;
+}
+
+.auth-left p:after {
+  color: #746c7f !important;
+}
+
+.auth-right {
+  background: var(--n-surface) !important;
+}
+
+.form-card:before {
+  color: var(--n-ink) !important;
+}
+
+.form-card:after {
+  content: "Gunakan akun NURTURA untuk melanjutkan." !important;
+  color: var(--n-muted) !important;
+}
+
+.form-card a {
+  color: var(--n-mint-strong) !important;
+}
+
+.step-indicator .step.active .circle,
+.step-indicator .step.completed .circle {
+  background: var(--n-mint-strong) !important;
+  border-color: var(--n-mint-strong) !important;
+}
+
+/* Data cards */
+.anak-card:before {
+  background: var(--n-lilac) !important;
+}
+
+.status {
+  box-shadow: none !important;
+}
+
+/* Modal */
+.anak-modal {
+  background: rgba(54, 49, 42, 0.38) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.modal {
+  background: var(--n-surface) !important;
+  border: 1px solid var(--n-line) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 70px rgba(54, 49, 42, 0.16) !important;
+}
+
+.modal-close {
+  background: #f2ece3 !important;
+  color: var(--n-ink) !important;
+}
+
+@media (max-width: 620px) {
+  .auth-left {
+    background: #f0eaf8 !important;
+  }
+
+  .form-card {
+    border-radius: 18px !important;
+  }
+}
