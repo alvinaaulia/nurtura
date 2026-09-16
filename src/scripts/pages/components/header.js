@@ -3,35 +3,41 @@ import "../../../styles/header.css";
 const pageMeta = () => {
   const path = window.location.hash.replace("#", "") || "/dashboard";
   const pages = {
-    "/dashboard": ["Dashboard", "Ringkasan pemantauan"],
-    "/anak": ["Data Anak", "Kelola data pertumbuhan"],
-    "/tambah-anak": ["Tambah Anak", "Input data baru"],
-    "/detail-anak": ["Detail Anak", "Informasi pertumbuhan"],
-    "/profile-posyandu": ["Profil Posyandu", "Informasi fasilitas"],
-    "/report": ["Laporan", "Rekap pemantauan"],
+    "/dashboard": ["Dashboard", "Ringkasan pemantauan pertumbuhan"],
+    "/anak": ["Data Anak", "Kelola data dan status pertumbuhan"],
+    "/tambah-anak": ["Tambah Anak", "Catat pengukuran baru"],
+    "/detail-anak": ["Detail Anak", "Informasi pertumbuhan terakhir"],
+    "/profile-posyandu": ["Profil Posyandu", "Identitas fasilitas layanan"],
+    "/report": ["Laporan", "Rekap pemantauan anak"],
     "/riwayat": ["Riwayat", "Pemeriksaan anak"],
   };
   return pages[path] || ["NURTURA", "Child Growth Monitoring System"];
 };
 
 const Header = {
-  render(isAuthPage = false) {
-    if (isAuthPage) return `<header class="main-header auth-header"><img src="kesehatan.png" alt="NURTURA" class="auth-logo" /></header>`;
+  render() {
     const [title, subtitle] = pageMeta();
     return `
-      <header class="main-header">
+      <div class="app-header-inner">
         <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button" aria-label="Buka navigasi" aria-controls="sidebar" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
-        <button class="header-logo" type="button" aria-label="Ke dashboard">
-          <img src="kesehatan.png" alt="Logo NURTURA" />
-          <div class="header-logo-text"><strong>NURTURA</strong><small>Child Growth Monitoring System</small></div>
+        <button class="header-brand" type="button" aria-label="Ke dashboard">
+          <img src="/images/nurtura-mark.svg" alt="" class="header-brand-mark" />
+          <span class="header-brand-copy"><strong>NURTURA</strong><small>Child Growth Monitoring System</small></span>
         </button>
-        <div class="header-page-context" aria-live="polite"><strong>${title}</strong><small>${subtitle}</small></div>
-      </header>`;
+        <div class="header-page-context" aria-live="polite">
+          <span class="header-page-kicker">Workspace</span>
+          <strong>${title}</strong>
+          <small>${subtitle}</small>
+        </div>
+      </div>`;
   },
   afterRender() {
-    document.querySelector(".header-logo")?.addEventListener("click", () => { window.location.hash = "/dashboard"; });
+    document.querySelector(".header-brand")?.addEventListener("click", () => {
+      window.location.hash = "/dashboard";
+    });
   },
 };
+
 export default Header;
