@@ -1,7 +1,7 @@
 require('dotenv').config();
 const pool = require('./config/database');
 
-async function migrate() {
+async function migrate({ closePool = true } = {}) {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -31,7 +31,7 @@ async function migrate() {
       );
     `);
 
-        await pool.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS status_anak (
         id SERIAL PRIMARY KEY,
         nama VARCHAR(255) NOT NULL,
@@ -44,11 +44,6 @@ async function migrate() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-await pool.query(`ALTER TABLE status_anak ADD COLUMN IF NOT EXISTS nama_orang_tua VARCHAR(255);`);
-await pool.query(`ALTER TABLE status_anak ADD COLUMN IF NOT EXISTS alamat TEXT;`);
-await pool.query(`ALTER TABLE status_anak ADD COLUMN IF NOT EXISTS posyandu VARCHAR(100);`);
-await pool.query(`ALTER TABLE status_anak ADD COLUMN IF NOT EXISTS foto_url TEXT;`);
-
 
     await pool.query(`
       ALTER TABLE status_anak
@@ -59,31 +54,31 @@ await pool.query(`ALTER TABLE status_anak ADD COLUMN IF NOT EXISTS foto_url TEXT
     `);
 
     await pool.query(`
-  CREATE TABLE IF NOT EXISTS riwayat_pemeriksaan (
-    id SERIAL PRIMARY KEY,
-    anak_id INT REFERENCES status_anak(id) ON DELETE CASCADE,
-    tanggal_pemeriksaan DATE NOT NULL,
-    tinggi_badan FLOAT NOT NULL,
-    berat_badan FLOAT NOT NULL,
-    umur_bulan INT NOT NULL,
-    status VARCHAR(50) NOT NULL
-  );
-`);
+      CREATE TABLE IF NOT EXISTS riwayat_pemeriksaan (
+        id SERIAL PRIMARY KEY,
+        anak_id INT REFERENCES status_anak(id) ON DELETE CASCADE,
+        tanggal_pemeriksaan DATE NOT NULL,
+        tinggi_badan FLOAT NOT NULL,
+        berat_badan FLOAT NOT NULL,
+        umur_bulan INT NOT NULL,
+        status VARCHAR(50) NOT NULL
+      );
+    `);
 
-await pool.query(`
-  CREATE TABLE IF NOT EXISTS posyandu_profile (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE REFERENCES admin(id) ON DELETE CASCADE,
-    nama_posyandu VARCHAR(100),
-    alamat TEXT
-  );
-`);
-await pool.query(`
-  ALTER TABLE posyandu_profile
-  ADD COLUMN IF NOT EXISTS foto_url TEXT,
-  ADD COLUMN IF NOT EXISTS deskripsi TEXT;
-`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS posyandu_profile (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER UNIQUE REFERENCES admin(id) ON DELETE CASCADE,
+        nama_posyandu VARCHAR(100),
+        alamat TEXT
+      );
+    `);
 
+    await pool.query(`
+      ALTER TABLE posyandu_profile
+      ADD COLUMN IF NOT EXISTS foto_url TEXT,
+      ADD COLUMN IF NOT EXISTS deskripsi TEXT;
+    `);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS posyandu_user (
@@ -95,16 +90,23 @@ await pool.query(`
       );
     `);
 
-
-
-
-
-    console.log("✅ Semua migrasi dan penambahan kolom berhasil dijalankan.");
+    console.log('✅ Semua migrasi database berhasil dijalankan.');
   } catch (err) {
-    console.error("❌ Gagal migrasi:", err);
+    console.error('❌ Gagal migrasi:', err);
+    throw err;
   } finally {
-    await pool.end();
+    // Saat dijalankan lewat `npm run migrate`, proses boleh menutup pool.
+    // Saat dipanggil dari app.js, pool HARUS tetap hidup untuk request API.
+    if (closePool) {
+      await pool.end();
+    }
   }
 }
 
-migrate();
+if (require.main === module) {
+  migrate().catch(() => {
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { migrate };
