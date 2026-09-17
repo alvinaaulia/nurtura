@@ -133,7 +133,7 @@ const DetailAnakPage = {
           <label class="dialog-field dialog-wide"><span>Alamat lengkap *</span><textarea name="alamat" required>${esc(child.alamat || "")}</textarea></label>
         </div>
         <p id="identityMessage" class="dialog-message" aria-live="polite"></p>
-        <div class="dialog-actions"><button type="button" class="btn-secondary" id="cancelIdentity">Batal</button><button type="submit" class="btn-primary" id="saveIdentity">Simpan Perubahan</button></div>
+        <div class="dialog-actions"><button type="button" class="btn-secondary" id="cancelIdentity">Batal</button><button type="submit" class="btn-primary save-action" id="saveIdentity"><span>Simpan Perubahan</span></button></div>
       </form>
     </dialog>`;
   },
@@ -152,7 +152,7 @@ const DetailAnakPage = {
         </div>
         <p class="checkup-note">Umur saat pemeriksaan dihitung otomatis dari tanggal lahir. Status pertumbuhan dihitung oleh model NURTURA setelah data disimpan.</p>
         <p id="checkupMessage" class="dialog-message" aria-live="polite"></p>
-        <div class="dialog-actions"><button type="button" class="btn-secondary" id="cancelCheckup">Batal</button><button type="submit" class="btn-primary" id="saveCheckup">Simpan Pemeriksaan</button></div>
+        <div class="dialog-actions"><button type="button" class="btn-secondary" id="cancelCheckup">Batal</button><button type="submit" class="btn-primary save-action" id="saveCheckup"><span>Simpan Pemeriksaan</span></button></div>
       </form>
     </dialog>`;
   },
@@ -160,6 +160,18 @@ const DetailAnakPage = {
   _bindActions({ token, anakId, child }) {
     const openDialog = (id) => document.getElementById(id)?.showModal();
     const closeDialog = (id) => document.getElementById(id)?.close();
+    const setFormLoading = (form, button, isLoading, loadingText, idleText) => {
+      if (!form || !button) return;
+      form.classList.toggle("is-saving", isLoading);
+      form.setAttribute("aria-busy", String(isLoading));
+      form.querySelectorAll("input, select, textarea, button").forEach((control) => {
+        control.disabled = isLoading;
+      });
+      button.innerHTML = isLoading
+        ? `<span class="button-spinner" aria-hidden="true"></span><span>${loadingText}</span>`
+        : `<span>${idleText}</span>`;
+    };
+
     const today = new Date().toISOString().slice(0, 10);
     const checkupDate = document.getElementById("tanggalPemeriksaan");
     if (checkupDate) {
@@ -186,9 +198,8 @@ const DetailAnakPage = {
       const message = document.getElementById("identityMessage");
       if (!form.checkValidity()) { form.reportValidity(); return; }
       const data = new FormData(form);
-      button.disabled = true;
-      button.textContent = "Menyimpan...";
       message.textContent = "";
+      setFormLoading(form, button, true, "Menyimpan...", "Simpan Perubahan");
       try {
         await DetailAnakPresenter.updateIdentitas(token, anakId, {
           nama: data.get("nama")?.trim(),
@@ -205,8 +216,7 @@ const DetailAnakPage = {
         await this.afterRender();
       } catch (error) {
         message.textContent = error.message || "Identitas gagal diperbarui.";
-        button.disabled = false;
-        button.textContent = "Simpan Perubahan";
+        setFormLoading(form, button, false, "Menyimpan...", "Simpan Perubahan");
       }
     });
 
@@ -217,9 +227,8 @@ const DetailAnakPage = {
       const message = document.getElementById("checkupMessage");
       if (!form.checkValidity()) { form.reportValidity(); return; }
       const data = new FormData(form);
-      button.disabled = true;
-      button.textContent = "Memproses...";
       message.textContent = "";
+      setFormLoading(form, button, true, "Menyimpan pemeriksaan...", "Simpan Pemeriksaan");
       try {
         await DetailAnakPresenter.tambahPemeriksaan(token, {
           anak_id: Number(anakId),
@@ -233,8 +242,7 @@ const DetailAnakPage = {
         await this.afterRender();
       } catch (error) {
         message.textContent = error.message || "Pemeriksaan gagal disimpan.";
-        button.disabled = false;
-        button.textContent = "Simpan Pemeriksaan";
+        setFormLoading(form, button, false, "Menyimpan pemeriksaan...", "Simpan Pemeriksaan");
       }
     });
 
