@@ -63,24 +63,19 @@ const DashboardPage = {
               <span>Ringkasan</span>
               <h2>Status gizi anak</h2>
             </div>
-            <p>Data mengikuti periode yang dipilih.</p>
+            <p>Data mengikuti tanggal pemeriksaan terakhir pada periode yang dipilih.</p>
           </div>
 
           <div class="summary-boxes">
-            ${labelOrder
-              .map(
-                (label) => `
-                  <button type="button" class="summary-box" data-status="${label}">
-                    <span class="summary-copy">
-                      <small>${getLabelDisplay(label)}</small>
-                      <strong id="${getSpanId(label)}">...</strong>
-                      <span class="summary-caption">anak</span>
-                    </span>
-                    <span class="summary-arrow" aria-hidden="true">↗</span>
-                  </button>
-                `
-              )
-              .join("")}
+            ${labelOrder.map((label) => `
+              <button type="button" class="summary-box" data-status="${label}">
+                <span class="summary-copy">
+                  <small>${getLabelDisplay(label)}</small>
+                  <strong id="${getSpanId(label)}">...</strong>
+                  <span class="summary-caption">anak</span>
+                </span>
+                <span class="summary-arrow" aria-hidden="true">↗</span>
+              </button>`).join("")}
           </div>
 
           <div class="chart-container">
@@ -89,25 +84,19 @@ const DashboardPage = {
                 <span class="chart-eyebrow">Distribusi</span>
                 <h2>Status gizi berdasarkan periode</h2>
               </div>
-              <p>Perbandingan jumlah anak pada setiap kategori pemantauan.</p>
+              <p>Perbandingan jumlah anak berdasarkan pemeriksaan terbaru pada setiap kategori.</p>
             </div>
-            <div class="chart-canvas-wrap">
-              <canvas id="stuntingChart"></canvas>
-            </div>
+            <div class="chart-canvas-wrap"><canvas id="stuntingChart"></canvas></div>
           </div>
         </div>
       </section>
 
       <div id="anak-modal" class="anak-modal hidden">
         <div class="modal">
-          <div class="modal-header">
-            <h2 id="modal-title">Daftar Anak</h2>
-            <button class="modal-close" onclick="closeDashboardModal()" aria-label="Tutup">×</button>
-          </div>
+          <div class="modal-header"><h2 id="modal-title">Daftar Anak</h2><button class="modal-close" onclick="closeDashboardModal()" aria-label="Tutup">×</button></div>
           <div class="modal-body" id="modal-list"></div>
         </div>
-      </div>
-    `;
+      </div>`;
   },
 
   async afterRender() {
@@ -133,53 +122,43 @@ const DashboardPage = {
     });
 
     tahunAktif = "All";
-    updateDashboard(tahunAktif, statistik, anakData);
+    updateDashboard(tahunAktif, statistik);
 
-    tahunSelect.addEventListener("change", (e) => {
-      tahunAktif = e.target.value;
-      updateDashboard(tahunAktif, statistik, anakData);
+    tahunSelect.addEventListener("change", (event) => {
+      tahunAktif = event.target.value;
+      updateDashboard(tahunAktif, statistik);
     });
 
     document.querySelectorAll(".summary-box").forEach((box) => {
       box.addEventListener("click", () => {
         const status = box.getAttribute("data-status");
         const targetLabels = labelMappingAPI[status] || [status];
-
         const filtered = anakData.filter((anak) => {
-          const tahunAnak = new Date(anak.created_at).getFullYear().toString();
+          if (!anak.last_checkup_at) return false;
+          const tahunPemeriksaan = new Date(anak.last_checkup_at).getFullYear().toString();
           const label = anak.label?.toLowerCase().trim();
-          return (
-            targetLabels.map((l) => l.toLowerCase().trim()).includes(label) &&
-            (tahunAktif === "All" || tahunAnak === tahunAktif)
-          );
+          return targetLabels.map((item) => item.toLowerCase().trim()).includes(label) &&
+            (tahunAktif === "All" || tahunPemeriksaan === tahunAktif);
         });
-
         tampilkanModal(filtered, status, tahunAktif);
       });
     });
 
-    document.getElementById("anak-modal").addEventListener("click", (e) => {
-      if (e.target.id === "anak-modal") closeDashboardModal();
+    document.getElementById("anak-modal").addEventListener("click", (event) => {
+      if (event.target.id === "anak-modal") closeDashboardModal();
     });
-
-    window.onkeydown = (e) => {
-      if (e.key === "Escape") closeDashboardModal();
-    };
-
+    window.onkeydown = (event) => { if (event.key === "Escape") closeDashboardModal(); };
     window.closeDashboardModal = closeDashboardModal;
   },
 };
 
-function updateDashboard(tahun, statistik, anakData) {
-  const dataTahun =
-    tahun === "All"
-      ? Object.values(statistik).reduce((total, current) => {
-          labelOrder.forEach((label) => {
-            total[label] = (total[label] || 0) + (Number(current?.[label]) || 0);
-          });
-          return total;
-        }, {})
-      : statistik[tahun] || {};
+function updateDashboard(tahun, statistik) {
+  const dataTahun = tahun === "All"
+    ? Object.values(statistik).reduce((total, current) => {
+        labelOrder.forEach((label) => { total[label] = (total[label] || 0) + (Number(current?.[label]) || 0); });
+        return total;
+      }, {})
+    : statistik[tahun] || {};
 
   labelOrder.forEach((label) => {
     const span = document.getElementById(getSpanId(label));
@@ -196,44 +175,25 @@ function updateDashboard(tahun, statistik, anakData) {
     type: "bar",
     data: {
       labels: labelOrder.map(getLabelDisplay),
-      datasets: [
-        {
-          label: `Statistik Anak (${periodLabel})`,
-          data: labelOrder.map((label) => dataTahun[label] || 0),
-          borderWidth: 0,
-          borderRadius: 18,
-          borderSkipped: false,
-          backgroundColor: ["#8fcbb0", "#e7c876", "#d99aa1"],
-          maxBarThickness: 76,
-        },
-      ],
+      datasets: [{
+        label: `Statistik Anak (${periodLabel})`,
+        data: labelOrder.map((label) => dataTahun[label] || 0),
+        borderWidth: 0,
+        borderRadius: 18,
+        borderSkipped: false,
+        backgroundColor: ["#8fcbb0", "#e7c876", "#d99aa1"],
+        maxBarThickness: 76,
+      }],
     },
     options: {
-      layout: { padding: 0 },
-      responsive: true,
-      maintainAspectRatio: false,
+      layout: { padding: 0 }, responsive: true, maintainAspectRatio: false,
       plugins: {
-        title: { display: false },
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "#242620",
-          padding: 12,
-          displayColors: false,
-          callbacks: { label: (context) => `${context.raw} anak` },
-        },
+        title: { display: false }, legend: { display: false },
+        tooltip: { backgroundColor: "#242620", padding: 12, displayColors: false, callbacks: { label: (context) => `${context.raw} anak` } },
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1, color: "#8a877f", precision: 0 },
-          grid: { color: "#eee8df" },
-          border: { display: false },
-        },
-        x: {
-          ticks: { color: "#5e5f59", font: { weight: 600 } },
-          grid: { display: false },
-          border: { display: false },
-        },
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: "#8a877f", precision: 0 }, grid: { color: "#eee8df" }, border: { display: false } },
+        x: { ticks: { color: "#5e5f59", font: { weight: 600 } }, grid: { display: false }, border: { display: false } },
       },
     },
   });
@@ -243,36 +203,17 @@ function tampilkanModal(data, status, tahunAktif) {
   const modal = document.getElementById("anak-modal");
   const title = document.getElementById("modal-title");
   const body = document.getElementById("modal-list");
+  const sorted = [...data].sort((a, b) => new Date(b.last_checkup_at) - new Date(a.last_checkup_at));
 
-  const sorted = [...data].sort(
-    (a, b) => new Date(b.created_at) - new Date(a.created_at)
-  );
-
-  title.textContent = `Daftar Anak dengan Status: ${getLabelDisplay(status)} (${
-    tahunAktif === "All" ? "Semua Tahun" : `Tahun ${tahunAktif}`
-  })`;
-
-  body.innerHTML =
-    sorted.length === 0
-      ? `<p><em>Tidak ada anak dengan status ini di ${
-          tahunAktif === "All" ? "Semua Tahun" : `Tahun ${tahunAktif}`
-        }.</em></p>`
-      : sorted
-          .map(
-            (anak) => `
+  title.textContent = `Daftar Anak dengan Status: ${getLabelDisplay(status)} (${tahunAktif === "All" ? "Semua Tahun" : `Tahun ${tahunAktif}`})`;
+  body.innerHTML = sorted.length === 0
+    ? `<p><em>Tidak ada anak dengan status ini di ${tahunAktif === "All" ? "Semua Tahun" : `Tahun ${tahunAktif}`}.</em></p>`
+    : sorted.map((anak) => `
         <div class="anak-item-card">
           <div class="anak-item-header"><strong>${anak.nama}</strong></div>
-          <div class="anak-item-body">
-            ${anak.jenis_kelamin} • Umur: ${anak.umur_bulan} bln<br>
-            TB: ${anak.tinggi_badan} cm • BB: ${anak.berat_badan} kg
-          </div>
-          <div class="anak-item-footer">
-            Tanggal input: ${new Date(anak.created_at).toLocaleDateString()}
-          </div>
-        </div>
-      `
-          )
-          .join("");
+          <div class="anak-item-body">${anak.jenis_kelamin} • Umur: ${anak.umur_bulan} bln<br>TB: ${anak.tinggi_badan} cm • BB: ${anak.berat_badan} kg</div>
+          <div class="anak-item-footer">Pemeriksaan terakhir: ${new Date(anak.last_checkup_at).toLocaleDateString("id-ID")}</div>
+        </div>`).join("");
 
   modal.classList.remove("hidden");
   modal.classList.add("open");
@@ -287,27 +228,19 @@ function closeDashboardModal() {
 
 function getLabelDisplay(label) {
   switch (label) {
-    case "Severely Stunted":
-      return "Berpotensi Stunting";
-    case "Stunted":
-      return "Penderita Stunting";
-    case "Normal":
-      return "Normal";
-    default:
-      return label;
+    case "Severely Stunted": return "Berpotensi Stunting";
+    case "Stunted": return "Penderita Stunting";
+    case "Normal": return "Normal";
+    default: return label;
   }
 }
 
 function getSpanId(label) {
   switch (label) {
-    case "Severely Stunted":
-      return "severely-stunted-count";
-    case "Stunted":
-      return "stunted-count";
-    case "Normal":
-      return "normal-count";
-    default:
-      return "";
+    case "Severely Stunted": return "severely-stunted-count";
+    case "Stunted": return "stunted-count";
+    case "Normal": return "normal-count";
+    default: return "";
   }
 }
 
