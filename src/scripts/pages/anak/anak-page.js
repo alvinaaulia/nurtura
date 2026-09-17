@@ -5,7 +5,7 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, (char) => (
   "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
 }[char]));
 
-const normalizeStatus = (label = "") => label.toLowerCase().trim().replace(/\s+/g, "-");
+const normalizeStatus = (label = "") => String(label || "").toLowerCase().trim().replace(/\s+/g, "-");
 
 const AnakPage = {
   async render() {
@@ -14,9 +14,9 @@ const AnakPage = {
         <div class="anak-page-shell">
           <header class="anak-page-heading">
             <div>
-              <p class="eyebrow">Pemantauan pertumbuhan</p>
+              <p class="eyebrow">Data identitas & pemeriksaan</p>
               <h1>Data Anak</h1>
-              <p class="page-subtitle">Cari, periksa, dan kelola data pertumbuhan anak dalam satu tempat.</p>
+              <p class="page-subtitle">Kelola identitas anak dan buka detail untuk menambahkan pemeriksaan berkala.</p>
             </div>
             <a href="#/tambah-anak" class="btn-tambah"><span aria-hidden="true">+</span> Tambah Anak</a>
           </header>
@@ -24,7 +24,7 @@ const AnakPage = {
           <section class="anak-toolbar" aria-label="Pencarian data anak">
             <label class="anak-search">
               <span class="search-icon" aria-hidden="true">⌕</span>
-              <input type="search" id="searchInput" placeholder="Cari nama anak..." autocomplete="off" />
+              <input type="search" id="searchInput" placeholder="Cari nama atau nomor identitas..." autocomplete="off" />
             </label>
             <div class="anak-result-meta" id="resultMeta" aria-live="polite">Memuat data...</div>
           </section>
@@ -46,7 +46,7 @@ const AnakPage = {
     const renderList = (data, keyword = "") => {
       resultMeta.textContent = `${data.length} anak${keyword ? ` ditemukan untuk “${keyword}”` : " terdaftar"}`;
       if (!data.length) {
-        container.innerHTML = `<div class="anak-empty"><div class="empty-icon" aria-hidden="true">⌕</div><h2>${keyword ? "Data tidak ditemukan" : "Belum ada data anak"}</h2><p>${keyword ? "Coba gunakan nama atau ejaan yang berbeda." : "Tambahkan data anak pertama untuk mulai memantau pertumbuhannya."}</p>${keyword ? "" : '<a href="#/tambah-anak" class="btn-tambah">+ Tambah Anak</a>'}</div>`;
+        container.innerHTML = `<div class="anak-empty"><div class="empty-icon" aria-hidden="true">⌕</div><h2>${keyword ? "Data tidak ditemukan" : "Belum ada data anak"}</h2><p>${keyword ? "Coba gunakan nama atau nomor identitas yang berbeda." : "Tambahkan identitas anak pertama. Pemeriksaan dapat dicatat setelah data anak tersimpan."}</p>${keyword ? "" : '<a href="#/tambah-anak" class="btn-tambah">+ Tambah Anak</a>'}</div>`;
         return;
       }
 
@@ -54,16 +54,17 @@ const AnakPage = {
         const safeName = escapeHtml(anak.nama);
         const safeGender = escapeHtml(anak.jenis_kelamin || "-");
         const safeLabel = escapeHtml(anak.label || "Belum diperiksa");
-        const storageKey = `foto_anak_${String(anak.nama || "").trim().toLowerCase()}_${String(anak.jenis_kelamin || "").trim().toLowerCase()}`;
-        const fotoSrc = localStorage.getItem(storageKey) || anak.foto_url;
-        const date = anak.created_at ? new Date(anak.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+        const hasCheckup = Boolean(anak.last_checkup_at || (anak.tinggi_badan != null && anak.berat_badan != null));
+        const lastDateValue = anak.last_checkup_at || (hasCheckup ? anak.created_at : null);
+        const date = lastDateValue ? new Date(lastDateValue).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "Belum ada pemeriksaan";
+        const identity = anak.nomor_identitas ? `ID · ${escapeHtml(anak.nomor_identitas)}` : safeGender;
         return `<article class="anak-card" data-id="${escapeHtml(anak.id)}" tabindex="0" role="link" aria-label="Lihat detail ${safeName}">
           <div class="anak-card-top">
-            ${fotoSrc ? `<img src="${escapeHtml(fotoSrc)}" alt="Foto ${safeName}" class="foto-anak" loading="lazy" />` : `<div class="placeholder-foto" aria-hidden="true"><span>${safeName.charAt(0).toUpperCase()}</span></div>`}
-            <div class="anak-identity"><h2>${safeName}</h2><p>${safeGender}</p></div>
+            ${anak.foto_url ? `<img src="${escapeHtml(anak.foto_url)}" alt="Foto ${safeName}" class="foto-anak" loading="lazy" />` : `<div class="placeholder-foto" aria-hidden="true"><span>${safeName.charAt(0).toUpperCase()}</span></div>`}
+            <div class="anak-identity"><h2>${safeName}</h2><p>${identity} · ${safeGender}</p></div>
             <span class="status ${normalizeStatus(anak.label)}">${safeLabel}</span>
           </div>
-          <div class="anak-card-bottom"><span><small>Data terakhir</small><strong>${date}</strong></span><span class="detail-link">Lihat detail <b>→</b></span></div>
+          <div class="anak-card-bottom"><span><small>Pemeriksaan terakhir</small><strong>${date}</strong></span><span class="detail-link">Buka detail <b>→</b></span></div>
         </article>`;
       }).join("");
 
@@ -79,7 +80,9 @@ const AnakPage = {
       renderList(anakList);
       searchInput.addEventListener("input", () => {
         const keyword = searchInput.value.trim().toLowerCase();
-        renderList(anakList.filter((anak) => String(anak.nama || "").toLowerCase().includes(keyword)), searchInput.value.trim());
+        const filtered = anakList.filter((anak) => [anak.nama, anak.nomor_identitas, anak.nama_orang_tua]
+          .filter(Boolean).some((value) => String(value).toLowerCase().includes(keyword)));
+        renderList(filtered, searchInput.value.trim());
       });
     } catch (error) {
       resultMeta.textContent = "Gagal memuat data";
